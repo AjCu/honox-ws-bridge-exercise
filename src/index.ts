@@ -24,28 +24,39 @@ const isValidCar = (car: Car) => {
   return true;
 };
 
+const addCarToArray = (newCar: Car) => {
+  carsArray.push(newCar);
+  console.log("Cars in the array: ");
+  console.table(carsArray);
+};
+
+const sendErrorMessage = (ws: WSContext, errorMessage: string) => {
+  const message = { error: errorMessage };
+  const messageString = JSON.stringify(message);
+  ws.send(messageString);
+  console.error(errorMessage);
+};
+
+const removeCarFromBridge = (newCar: Car, ws: WSContext) => {
+  const index = carsArray.findIndex((car) => car.id === newCar.id);
+  carsArray.splice(index, 1);
+  const message = { id: newCar.id };
+  const messageString = JSON.stringify(message);
+  ws.send(messageString);
+  console.info("Car with id " + newCar.id + " has passed the bridge");
+};
+
 const handleCarRequest = (event: MessageEvent, ws: WSContext) => {
   console.info("Car request received...");
   const newCar = JSON.parse(event.data.toString()) as Car;
   if (!isValidCar(newCar)) {
-    const errorMessage = "Invalid car request";
-    const message = { error: errorMessage };
-    const messageString = JSON.stringify(message);
-    ws.send(messageString);
-    console.error("Invalid car request");
+    sendErrorMessage(ws, "Invalid car request");
     return;
   }
-  carsArray.push(newCar);
-  console.log("Cars in the array: ");
-  console.table(carsArray);
+  addCarToArray(newCar);
   const acumulatedTime = calculateAcumulatedTime(carsArray);
   setTimeout(() => {
-    const index = carsArray.findIndex((car) => car.id === newCar.id);
-    carsArray.splice(index, 1);
-    const message = { id: newCar.id };
-    const messageString = JSON.stringify(message);
-    ws.send(messageString);
-    console.info("Car with id " + newCar.id + " has passed the bridge");
+    removeCarFromBridge(newCar, ws);
   }, acumulatedTime * 1000);
 };
 
